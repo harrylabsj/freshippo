@@ -1,7 +1,7 @@
 ---
 name: freshippo
-version: 2.0.0
-description: "Shop Freshippo (盒马鲜生) with browser automation for search, fresh produce selection, cart operations, and smart grocery guidance. Supports logged-in workflows for browsing, adding to cart, and order preview while keeping checkout/payment for user control. Use when the user wants help shopping on 盒马鲜生, choosing fresh groceries, planning family meals, or optimizing delivery slots."
+version: 2.1.1
+description: "Shop Freshippo (盒马鲜生) in safe decision-assist mode: fresh grocery selection, basket planning, delivery-slot strategy, price/freshness checks, and manual order handoff. Use when the user wants help choosing 盒马 products, planning family meals, reducing fresh-food waste, comparing delivery windows, or preparing a cart without agent-controlled checkout or payment."
 metadata:
   clawdbot:
     emoji: "🦛"
@@ -16,9 +16,28 @@ metadata:
 
 Use this skill to help users shop smartly on Freshippo (盒马鲜生), Alibaba's premium fresh grocery platform. Get guidance on fresh produce selection, delivery timing, membership benefits, and weekly meal planning.
 
+## Safe Operating Mode
+
+Default to **decision-assist mode**. The agent may help compare products, build a basket, explain freshness risk, and prepare manual steps. The user controls login, cart mutation, checkout, order submission, payment, address selection, and coupon use unless the active host provides a clearly authorized tool and the user explicitly approves that action in the current turn.
+
+For every shopping task, collect only the missing essentials:
+
+- household size, meal plan, dietary constraints, budget, and freshness priority
+- delivery city/area and desired delivery window, if the user wants timing advice
+- must-have items, substitution tolerance, and items to avoid
+
+Return a cart-ready answer:
+
+```text
+Recommended basket: <items + quantities>
+Freshness/risk check: <expiry, origin, cold-chain, substitution, stock caveats>
+Delivery plan: <best slot + backup slot + why>
+Manual checks: <price, coupon, address, final stock, payment>
+```
+
 ## Capabilities
 
-### v2.0 - Browser Automation Support
+### v2.1 - Safe Shopping Support
 
 | Operation | Auth Required | Description |
 |-----------|---------------|-------------|
@@ -26,14 +45,11 @@ Use this skill to help users shop smartly on Freshippo (盒马鲜生), Alibaba's
 | **Product Detail** | Optional | View specs, prices, freshness indicators |
 | **Fresh Produce Guide** | Optional | Read selection tips, origin info, reviews |
 | **Price Compare** | Optional | Compare prices across categories |
-| **Add to Cart** | ✅ Required | Add items to shopping cart |
-| **View Cart** | ✅ Required | Review cart contents, quantities |
-| **Apply Coupons** | ✅ Required | Check and apply X会员 discounts |
-| **Delivery Slot Check** | ✅ Required | View available 30-min delivery slots |
-| **Generate Order Preview** | ✅ Required | Calculate total with delivery fee |
-| **Payment** | ❌ Blocked | User must complete payment manually |
+| **Cart-Ready Plan** | User-controlled | Provide exact manual cart instructions and substitutions |
+| **Coupon/Delivery Advice** | User-controlled | Tell the user what to check in app; do not claim applied discounts |
+| **Address / Checkout / Payment** | User-controlled | User must complete these steps manually |
 
-**Safety Rule**: Agent stops before payment. User retains full control over final purchase.
+**Safety Rule**: The user retains full control over account state, address, checkout, and payment. If browser automation exists, ask again before any account-changing action.
 
 ### Legacy: Guidance-Only Mode (No Browser)
 
@@ -58,21 +74,13 @@ Use this skill to help users shop smartly on Freshippo (盒马鲜生), Alibaba's
 3. **Quantity Selection** - Confirm amount, weight
 4. **Final Price Check** - Calculate price with X会员 discount if applicable
 
-### Phase 3: Cart & Pre-Order (Agent-Assisted with Login)
-1. **Add to Cart** - Agent adds item to cart (requires login)
-2. **Cart Review** - Agent shows cart contents, quantities, subtotal
-3. **Coupon Application** - Agent checks X会员 benefits and coupons
-4. **Delivery Slot** - Agent checks available 30-min delivery slots
-5. **Address Selection** - Agent confirms delivery address
-6. **Order Summary** - Agent generates complete order preview
+### Phase 3: Cart-Ready Handoff (User-Controlled)
+1. **Basket Summary** - Provide items, quantities, substitutions, and avoid-list.
+2. **Coupon/Member Checks** - Tell the user what to verify in app without claiming a discount was applied.
+3. **Delivery Slot Plan** - Recommend primary and backup windows based on freshness, meal timing, and peak demand.
+4. **Manual Order Steps** - User performs login, cart changes, address selection, checkout, and payment.
 
-### Phase 4: Checkout (User-Controlled)
-1. **Handoff** - Agent presents final order details
-2. **User Review** - User confirms all details are correct
-3. **Payment** - ⚠️ **User completes payment manually**
-4. **Confirmation** - User shares order confirmation with agent if desired
-
-**Agent Boundary**: Stops at Phase 3. Never executes payment or final order submission.
+**Agent Boundary**: Do not execute checkout, payment, address selection, or final order submission.
 
 ### Legacy: Guidance-Only Mode (No Browser)
 
@@ -105,8 +113,8 @@ Use this skill to help users shop smartly on Freshippo (盒马鲜生), Alibaba's
 User: "帮我买盒马的三文鱼"
   ↓
 Step 1: Confirm Intent
-  "我来帮你搜索盒马的三文鱼，对比选项，加入购物车。
-   最后需要你确认订单并完成支付。可以吗？"
+  "我来帮你筛选盒马三文鱼，给出数量、鲜度风险和手动下单步骤。
+   登录、加购、地址、提交订单和支付都由你自己完成。"
   ↓
 Step 2: Discovery Phase (No login required)
   - Search Freshippo for "三文鱼"
@@ -121,34 +129,21 @@ Step 3: Selection Phase (No login required)
   - Confirm quantity/weight
   - Show final price (X会员价 if applicable)
   ↓
-Step 4: Cart Phase (⚠️ Requires login)
-  "接下来需要登录你的盒马账号才能加入购物车，
-   请确认是否继续？"
-  - If yes: proceed with browser automation
-  - If no: provide manual instructions
-  ↓
-Step 5: Order Generation (Requires login)
-  - Add to cart
-  - Check X会员 discounts
-  - Select delivery slot (30-min window)
-  - Calculate final price (delivery fee if applicable)
-  - Generate order preview
-  ↓
-Step 6: Handoff (User-controlled)
-  "订单已准备好，请检查：
-   [订单详情摘要]
-   
-   👉 请手动完成支付：
+Step 4: Cart-Ready Handoff (User-controlled)
+  "建议清单已准备好，请在 App 中手动检查：
+   [商品 + 数量 + 替代品 + 鲜度风险]
+
+   👉 手动下单：
    1. 打开盒马 App
-   2. 进入购物车
-   3. 点击结算
-   4. 确认地址和配送时段
-   5. 提交订单并支付"
+   2. 搜索商品并核对产地/规格/到期或捕捞信息
+   3. 选择建议数量和替代品
+   4. 确认地址、配送时段、优惠和最终价格
+   5. 自行提交订单并支付"
 ```
 
 ### Browser Automation Rules
 
-**Always announce before action:**
+**Always announce before reading or navigating public information:**
 - "正在搜索..."
 - "正在打开商品页面..."
 - "正在检查新鲜度信息..."
@@ -163,10 +158,10 @@ Step 6: Handoff (User-controlled)
 - Cart subtotal and delivery fee
 
 **Stop conditions:**
-- Before any payment screen
-- When CAPTCHA appears (hand to user)
-- When login is required (ask first)
-- When price differs significantly from expected
+- Before login, address selection, cart mutation, checkout, or payment
+- When CAPTCHA appears
+- When price, stock, delivery slot, or freshness information differs significantly from expected
+- When the user asks the agent to place or pay for the order
 
 ### Login Handling
 
