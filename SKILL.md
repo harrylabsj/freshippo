@@ -1,7 +1,7 @@
 ---
 name: freshippo
-version: 2.1.1
-description: "Shop Freshippo (盒马鲜生) in safe decision-assist mode: fresh grocery selection, basket planning, delivery-slot strategy, price/freshness checks, and manual order handoff. Use when the user wants help choosing 盒马 products, planning family meals, reducing fresh-food waste, comparing delivery windows, or preparing a cart without agent-controlled checkout or payment."
+version: 2.1.2
+description: "Shop Freshippo (盒马鲜生) in safe decision-assist mode: fresh grocery selection, shopping-list planning, delivery-window strategy, price/freshness checks, and manual order handoff. Use when the user wants help choosing 盒马 products, planning family meals, reducing fresh-food waste, comparing delivery windows, or preparing a manual shopping list without agent-controlled login, in-app product-list changes, coupon use, address choice, checkout, order submission, or payment."
 metadata:
   clawdbot:
     emoji: "🦛"
@@ -18,7 +18,7 @@ Use this skill to help users shop smartly on Freshippo (盒马鲜生), Alibaba's
 
 ## Safe Operating Mode
 
-Default to **decision-assist mode**. The agent may help compare products, build a basket, explain freshness risk, and prepare manual steps. The user controls login, cart mutation, checkout, order submission, payment, address selection, and coupon use unless the active host provides a clearly authorized tool and the user explicitly approves that action in the current turn.
+Default to **decision-assist mode**. The agent may help compare products, build a shopping list, explain freshness risk, and prepare manual steps. The user controls login, in-app product-list changes, checkout, order submission, payment, address selection, delivery-slot reservation, and coupon use. This published skill does not perform account-changing actions.
 
 For every shopping task, collect only the missing essentials:
 
@@ -26,10 +26,10 @@ For every shopping task, collect only the missing essentials:
 - delivery city/area and desired delivery window, if the user wants timing advice
 - must-have items, substitution tolerance, and items to avoid
 
-Return a cart-ready answer:
+Return a shopping-list-ready answer:
 
 ```text
-Recommended basket: <items + quantities>
+Recommended list: <items + quantities>
 Freshness/risk check: <expiry, origin, cold-chain, substitution, stock caveats>
 Delivery plan: <best slot + backup slot + why>
 Manual checks: <price, coupon, address, final stock, payment>
@@ -45,11 +45,11 @@ Manual checks: <price, coupon, address, final stock, payment>
 | **Product Detail** | Optional | View specs, prices, freshness indicators |
 | **Fresh Produce Guide** | Optional | Read selection tips, origin info, reviews |
 | **Price Compare** | Optional | Compare prices across categories |
-| **Cart-Ready Plan** | User-controlled | Provide exact manual cart instructions and substitutions |
+| **Shopping-List Plan** | User-controlled | Provide exact manual list instructions and substitutions |
 | **Coupon/Delivery Advice** | User-controlled | Tell the user what to check in app; do not claim applied discounts |
 | **Address / Checkout / Payment** | User-controlled | User must complete these steps manually |
 
-**Safety Rule**: The user retains full control over account state, address, checkout, and payment. If browser automation exists, ask again before any account-changing action.
+**Safety Rule**: The user retains full control over account state, address, checkout, delivery-slot reservation, coupon application, in-app product-list changes, and payment. Treat any separate host account-changing or payment tool as outside this skill and require a fresh, explicit user confirmation before using it.
 
 ### Legacy: Guidance-Only Mode (No Browser)
 
@@ -74,11 +74,11 @@ Manual checks: <price, coupon, address, final stock, payment>
 3. **Quantity Selection** - Confirm amount, weight
 4. **Final Price Check** - Calculate price with X会员 discount if applicable
 
-### Phase 3: Cart-Ready Handoff (User-Controlled)
+### Phase 3: Shopping-List Handoff (User-Controlled)
 1. **Basket Summary** - Provide items, quantities, substitutions, and avoid-list.
 2. **Coupon/Member Checks** - Tell the user what to verify in app without claiming a discount was applied.
 3. **Delivery Slot Plan** - Recommend primary and backup windows based on freshness, meal timing, and peak demand.
-4. **Manual Order Steps** - User performs login, cart changes, address selection, checkout, and payment.
+4. **Manual Order Steps** - User performs login, in-app product-list changes, address selection, checkout, and payment.
 
 **Agent Boundary**: Do not execute checkout, payment, address selection, or final order submission.
 
@@ -103,7 +103,7 @@ Manual checks: <price, coupon, address, final stock, payment>
 | X会员 Benefits | 盒马X会员权益详解 |
 | Weekly Planning | 一周买菜规划 |
 | Shopping Lists | 购物清单管理 |
-| Browser Automation | 搜索/加购/订单预览 |
+| Read-Only Browser Support | 公开商品信息/价格/规格核对，不做账户变更 |
 
 ## Agent Execution Guide
 
@@ -114,7 +114,7 @@ User: "帮我买盒马的三文鱼"
   ↓
 Step 1: Confirm Intent
   "我来帮你筛选盒马三文鱼，给出数量、鲜度风险和手动下单步骤。
-   登录、加购、地址、提交订单和支付都由你自己完成。"
+   登录、App 内商品清单调整、地址、提交订单和支付都由你自己完成。"
   ↓
 Step 2: Discovery Phase (No login required)
   - Search Freshippo for "三文鱼"
@@ -129,7 +129,7 @@ Step 3: Selection Phase (No login required)
   - Confirm quantity/weight
   - Show final price (X会员价 if applicable)
   ↓
-Step 4: Cart-Ready Handoff (User-controlled)
+Step 4: Shopping-List Handoff (User-controlled)
   "建议清单已准备好，请在 App 中手动检查：
    [商品 + 数量 + 替代品 + 鲜度风险]
 
@@ -141,24 +141,23 @@ Step 4: Cart-Ready Handoff (User-controlled)
    5. 自行提交订单并支付"
 ```
 
-### Browser Automation Rules
+### Read-Only Browser Rules
 
 **Always announce before reading or navigating public information:**
 - "正在搜索..."
 - "正在打开商品页面..."
 - "正在检查新鲜度信息..."
-- "正在加入购物车..."
 
 **Snapshot key information:**
 - Product name, price, X会员 price
 - Freshness indicators (日日鲜, 产地直采, 鲜活)
 - Origin/traceability info
 - Harvest/pack dates
-- Available delivery slots
-- Cart subtotal and delivery fee
+- Public delivery timing guidance when available
+- Manual checks the user must verify in the App
 
 **Stop conditions:**
-- Before login, address selection, cart mutation, checkout, or payment
+- Before login, address selection, in-app product-list changes, checkout, or payment
 - When CAPTCHA appears
 - When price, stock, delivery slot, or freshness information differs significantly from expected
 - When the user asks the agent to place or pay for the order
@@ -351,15 +350,16 @@ Freshippo's strength is **fresh food and quality groceries**:
 ### Do:
 - ✅ Focus on fresh produce guidance
 - ✅ Explain delivery timing strategies
-- ✅ Use browser automation for search/cart
-- ✅ Add to cart and check X会员 benefits (with user consent)
-- ✅ Generate order preview with delivery slot selection
+- ✅ Use read-only browsing or user-provided screenshots for public product comparison
+- ✅ Tell the user what X会员/coupon fields to check manually
+- ✅ Generate a shopping-list handoff with substitutions and manual verification steps
 - ✅ Stay honest about not doing payment operations
 
 ### Do Not:
-- ❌ Pretend to log in (ask first)
+- ❌ Log in or claim to be logged in
 - ❌ Claim to confirm live inventory without checking
 - ❌ Store user data persistently
+- ❌ Change the user's in-app product list, apply coupons, reserve delivery slots, or choose addresses
 - ❌ **Execute payment or final order submission**
 - ❌ Guarantee freshness without evidence
 
@@ -380,11 +380,11 @@ Install with `clawhub install <slug>` if user confirms:
 
 ## 🚀 First-Success Path
 
-**30秒快速上手：三步完成盒马购物**
+**30秒快速上手：三步完成盒马购物决策**
 
 1. **告诉我你想买什么** — 如"帮我看看盒马有什么好的三文鱼"
 2. **获取推荐对比** — 我搜索盒马商品、对比价格和新鲜度信息
-3. **选择并加入购物车（需登录）** — 确认商品后加入购物车，选择配送时段
+3. **拿到手动清单** — 你本人在盒马 App 核对价格、优惠、商品清单、地址、配送时段并下单
 
 > 示例："帮我看看盒马今天有什么新鲜的草莓，我想买两盒"
 
@@ -563,8 +563,8 @@ Install with `clawhub install <slug>` if user confirms:
 
 | 场景 | 用户输入示例 | 技能输出要点 |
 |------|-------------|-------------|
-| **智能买菜** | "帮我买盒马的黑虎虾，看看有什么规格的" | 搜索商品 → 对比规格/价格/会员价 → 推荐最合适的 → 协助加购 |
+| **智能买菜** | "帮我买盒马的黑虎虾，看看有什么规格的" | 搜索建议 → 对比规格/价格/会员价 → 推荐最合适的 → 给用户手动清单 |
 | **周计划** | "这周末有朋友来家吃饭，4个人，帮我列个采购清单" | 根据人数/场景规划菜单 → 生成采购清单 → 推荐盒马对应商品 → 估算费用 |
 | **优惠分析** | "盒马上有没有什么划算的蒙牛牛奶？" | 搜索+价格对比 → 分析单品/整箱哪个划算 → 计算X会员折扣 → 检查周二会员日优惠 |
-| **选购咨询** | "阿根廷红虾和黑虎虾哪个好吃？" | 产地/口感/烹饪方式对比 → 价格对比 → 建议搭配 → 盒马实时库存检查 |
-| **配送优化** | "我明天要出差，想提前订好家里的菜" | 配送时段选择建议 → 预约下单 → 生鲜保鲜建议 → 收件安排提示 |
+| **选购咨询** | "阿根廷红虾和黑虎虾哪个好吃？" | 产地/口感/烹饪方式对比 → 价格对比 → 建议搭配 → 提醒用户手动核对盒马库存 |
+| **配送优化** | "我明天要出差，想提前订好家里的菜" | 配送时段选择建议 → 手动预约提醒 → 生鲜保鲜建议 → 收件安排提示 |
